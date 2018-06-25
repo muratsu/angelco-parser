@@ -2,6 +2,7 @@ const fs = require('fs');
 const rp = require('request-promise-native');
 const cheerio = require('cheerio');
 const pThrottle = require('p-throttle');
+const ProgressBar = require('progress');
 
 // Attempt promises with retry
 function attemptWithRetry(promiseGenerator, attempts = 5, delay = 10000) {
@@ -53,7 +54,6 @@ async function fetchAllListings() {
 
 // Fetched all all the listings of a company in more detail
 async function fetchCompanyListings(listing) {
-  console.log(`Fetching jobs for company ${listing.companyId}`)
   const jobs = [];
   const startupId = `startup_ids%5B%5D=${listing.companyId}`;
   const listingIds = listing.listingIds.reduce((acc, cur) => {
@@ -105,27 +105,25 @@ const main = async () => {
   const jobs = await fetchAllListings();
   console.log('Fetching completed.');
 
-  // const companyJobs = await fetchCompanyListings(jobs[0]);
-  // var wstream = fs.createWriteStream('output.json');
+  const bar = new ProgressBar('Analyzing listings [:bar] :percent :etas', {
+    complete: '=',
+    incomplete: ' ',
+    width: 20,
+    total: jobs.length
+  });
 
   // Run job fetchers
+  const throttled = pThrottle(job => {
+    return fetchCompanyListings(job);
+  }, 1, 2000);
+
   for (job of jobs) {
-    const jobJSON = await attemptWithRetry(() => fetchCompanyListings(job));
+    const jobJSON = await throttled(job);
+    bar.tick(1);
     fs.appendFileSync('output.json', `${JSON.stringify(jobJSON)}\n`);
   }
-  // await Promise.all(throttled);
 
-  // wstream.write('Another line\n');
-  // wstream.end();
-
-  // {
-  //   return fetchCompanyListings(job).then(jobJSON => {
-  //     wstream.write(`${jobJSON}\n`);
-  //     return Promise.resolve();
-  //   })
-  // }))
-
-
+  console.log('Analyze done.');
 };
 
 main();

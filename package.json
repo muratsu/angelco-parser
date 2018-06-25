@@ -22,8 +22,8 @@
   "homepage": "https://github.com/muratsu/angelco-parser#readme",
   "dependencies": {
     "cheerio": "1.0.0-rc.2",
-    "p-limit": "2.0.0",
     "p-throttle": "1.1.0",
+    "progress": "2.0.0",
     "request": "2.87.0",
     "request-promise-native": "1.0.5"
   }
